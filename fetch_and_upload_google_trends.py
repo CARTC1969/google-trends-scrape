@@ -5,16 +5,19 @@ import requests
 import os
 from datetime import datetime
 
-# Supabase credentials from GitHub Actions secrets
+# Supabase credentials
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_API_KEY = os.getenv("SUPABASE_API_KEY")
 
-# Setup Google Trends fetch
 pytrends = TrendReq(hl='en-US', tz=360)
-trending_searches_df = pytrends.trending_searches(pn='united_states')
-
-# Timestamp for scrapedAt
 now = datetime.utcnow().isoformat()
+
+# Fallback to stable list if trending_searches fails
+try:
+    trending_searches_df = pytrends.trending_searches(pn='united_states')
+except:
+    trending_searches_df = pytrends.today_searches(pn='US')
+
 headers = {
     "apikey": SUPABASE_API_KEY,
     "Authorization": f"Bearer {SUPABASE_API_KEY}",
@@ -22,7 +25,6 @@ headers = {
     "Prefer": "return=representation"
 }
 
-# Push each trend to Supabase
 for rank, row in trending_searches_df.iterrows():
     payload = {
         "trend_rank": rank + 1,
@@ -40,8 +42,6 @@ for rank, row in trending_searches_df.iterrows():
     )
 
     if response.status_code not in [200, 201]:
-        print(f"Failed to insert trend {payload['trendQuery']}: {response.text}")
+        print(f"❌ Failed: {payload['trendQuery']} – {response.status_code} {response.text}")
     else:
-        print(f"Inserted: {payload['trendQuery']}")
-
-print("✅ All trends processed.")
+        print(f"✅ Inserted: {payload['trendQuery']}")

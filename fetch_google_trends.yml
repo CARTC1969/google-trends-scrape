@@ -1,0 +1,31 @@
+
+name: Fetch Google Trends Daily
+
+on:
+  schedule:
+    - cron: '0 13 * * *'  # Runs daily at 5:00 AM PST (13:00 UTC)
+  workflow_dispatch:      # Allow manual trigger
+
+jobs:
+  fetch-trends:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install pytrends
+
+      - name: Run Google Trends Scraper
+        run: python fetch_google_trends_us.py
+
+      - name: Upload Trends Output
+        uses: actions/upload-artifact@v3
+        with:
+          name: daily_us_trends
+          path: daily_us_trends.json
